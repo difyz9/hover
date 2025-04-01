@@ -36,6 +36,8 @@ var runCmd = &cobra.Command{
 	Short: "Build and start a desktop release, with hot-reload support",
 	Run: func(cmd *cobra.Command, args []string) {
 		projectName := pubspec.GetPubSpec().Name
+
+		fmt.Println("projectName: ", projectName)
 		assertHoverInitialized()
 
 		// Can only run on host OS

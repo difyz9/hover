@@ -29,6 +29,9 @@ func createSymLink(oldname, newname string) error {
 		return errors.Wrap(err, "failed to remove existing symlink")
 	}
 
+	fmt.Println("oldname == " + oldname)
+	fmt.Println("newname == " + newname)
+
 	err = os.Symlink(oldname, newname)
 	if err != nil {
 		return errors.Wrap(err, "failed to create symlink")
@@ -139,6 +142,7 @@ func downloadFile(filepath string, url string) error {
 	}
 	defer out.Close()
 
+	fmt.Println("url == " + url)
 	// Get the data
 	resp, err := http.Get(url)
 	if err != nil {
@@ -173,7 +177,7 @@ func EngineConfig(targetOS string, mode build.Mode) string {
 	return fmt.Sprintf("%s-%s", targetOS, mode.Name)
 }
 
-//noinspection GoNameStartsWithPackageName
+// noinspection GoNameStartsWithPackageName
 func EngineCachePath(targetOS, cachePath string, mode build.Mode) string {
 	return filepath.Join(BaseEngineCachePath(cachePath), EngineConfig(targetOS, mode))
 }
@@ -186,7 +190,11 @@ func BaseEngineCachePath(cachePath string) string {
 // flutter version, or otherwise downloads a new engine. The engine cache
 // location is set by the the user.
 func ValidateOrUpdateEngine(targetOS, cachePath, requiredEngineVersion string, mode build.Mode) {
+
+	fmt.Println("cachePath == " + cachePath)
 	engineCachePath := EngineCachePath(targetOS, cachePath, mode)
+
+	fmt.Println("engineCachePath == " + engineCachePath)
 
 	if strings.Contains(engineCachePath, " ") {
 		log.Errorf("Cannot save the engine to '%s', engine cache is not compatible with path containing spaces.", cachePath)
@@ -196,6 +204,7 @@ func ValidateOrUpdateEngine(targetOS, cachePath, requiredEngineVersion string, m
 		os.Exit(1)
 	}
 
+	fmt.Println("engineCachePath == " + engineCachePath)
 	cachedEngineVersionPath := filepath.Join(engineCachePath, "version")
 	cachedEngineVersionBytes, err := ioutil.ReadFile(cachedEngineVersionPath)
 	if err != nil && !os.IsNotExist(err) {
@@ -206,6 +215,8 @@ func ValidateOrUpdateEngine(targetOS, cachePath, requiredEngineVersion string, m
 	if len(requiredEngineVersion) == 0 {
 		requiredEngineVersion = version.FlutterRequiredEngineVersion()
 	}
+
+	fmt.Println("cachedEngineVersion == " + cachedEngineVersion)
 
 	if cachedEngineVersion == fmt.Sprintf("%s-%s", requiredEngineVersion, version.HoverVersion()) {
 		log.Printf("Using engine from cache")
@@ -220,6 +231,7 @@ func ValidateOrUpdateEngine(targetOS, cachePath, requiredEngineVersion string, m
 		}
 	}
 
+	fmt.Println("engineCachePath  " + engineCachePath)
 	err = os.MkdirAll(engineCachePath, 0775)
 	if err != nil {
 		log.Errorf("Failed to create engine cache directory: %v", err)
@@ -227,11 +239,17 @@ func ValidateOrUpdateEngine(targetOS, cachePath, requiredEngineVersion string, m
 	}
 
 	dir, err := ioutil.TempDir("", "hover-engine-download")
+
+	// dir := "/Users/apple/opt/Jetbrain/hover"
+
+	fmt.Println("-----拷贝文件成功啦----- ")
+
+	fmt.Println("dir == " + dir)
 	if err != nil {
 		log.Errorf("Failed to create tmp dir for engine download: %v", err)
 		os.Exit(1)
 	}
-	defer os.RemoveAll(dir)
+	//defer os.RemoveAll(dir)
 
 	err = os.MkdirAll(dir, 0700)
 	if err != nil {
@@ -250,6 +268,9 @@ func ValidateOrUpdateEngine(targetOS, cachePath, requiredEngineVersion string, m
 			targetedDomain = envURLFlutter
 		}
 		var engineDownloadURL = fmt.Sprintf(targetedDomain+"/flutter_infra_release/flutter/%s/%s-x64/", requiredEngineVersion, targetOS)
+
+		fmt.Println("engineDownloadURL == " + engineDownloadURL)
+
 		switch targetOS {
 		case "darwin":
 			engineDownloadURL += "FlutterEmbedder.framework.zip"
@@ -265,11 +286,27 @@ func ValidateOrUpdateEngine(targetOS, cachePath, requiredEngineVersion string, m
 		artifactsZipPath := filepath.Join(dir, "artifacts.zip")
 		artifactsDownloadURL := fmt.Sprintf(targetedDomain+"/flutter_infra_release/flutter/%s/%s-x64/artifacts.zip", requiredEngineVersion, targetOS)
 
-		err = downloadFile(engineZipPath, engineDownloadURL)
-		if err != nil {
-			log.Errorf("Failed to download engine: %v", err)
-			os.Exit(1)
+		fmt.Println("artifactsZipPath == " + artifactsZipPath)
+
+		fmt.Println("artifactsDownloadURL == " + artifactsDownloadURL)
+
+		//err = downloadFile(engineZipPath, engineDownloadURL)
+		//if err != nil {
+		//	log.Errorf("Failed to download engine: %v", err)
+		//	os.Exit(1)
+		//}
+
+		fmt.Println(" -------------- engineZipPath == " + engineExtractPath)
+		if err = CreateDirIfNotExists(engineExtractPath); err != nil {
+			fmt.Println("创建文件失败")
 		}
+
+		//if err := CopyFile("/Users/apple/opt/Jetbrain/hover/FlutterEmbedder.framework.zip", engineExtractPath+"/FlutterEmbedder.framework.zip"); err != nil {
+		//	fmt.Println("-------- 复制文件失败--------------")
+		//}
+
+		fmt.Println("engineZipPath == " + engineZipPath)
+		fmt.Println("engineExtractPath == " + engineExtractPath)
 		_, err = unzip(engineZipPath, engineExtractPath)
 		if err != nil {
 			log.Warnf("%v", err)
@@ -287,7 +324,11 @@ func ValidateOrUpdateEngine(targetOS, cachePath, requiredEngineVersion string, m
 		if targetOS == "darwin" {
 			frameworkZipPath := filepath.Join(engineExtractPath, "FlutterEmbedder.framework.zip")
 			frameworkDestPath := filepath.Join(engineExtractPath, "FlutterEmbedder.framework")
-			_, err = unzip(frameworkZipPath, frameworkDestPath)
+
+			fmt.Println("frameworkZipPath == " + frameworkZipPath)
+			fmt.Println("frameworkDestPath == " + frameworkDestPath)
+
+			//_, err = unzip(frameworkZipPath, frameworkDestPath)
 			if err != nil {
 				log.Errorf("Failed to unzip engine framework: %v", err)
 				os.Exit(1)
